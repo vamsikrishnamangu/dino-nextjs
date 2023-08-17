@@ -3,20 +3,12 @@ import {
   incrementCustomProperty,
   getCustomProperty,
 } from "@/store/updateCustomProperty";
-import { useEffect, useState } from "react";
 
 const SPEED = 0.05;
 const CACTUS_INTERVAL_MIN = 500;
 const CACTUS_INTERVAL_MAX = 2000;
 
 let nextCactusTime: number;
-function Cactus() {
-  const [worldElem, setWorldElem] = useState<any>(null);
-  useEffect(() => {
-    const worldElem = document.querySelector("[data-world]") as HTMLElement;
-    setWorldElem(worldElem);
-  }, []);
-}
 export function setupCactus(): void {
   nextCactusTime = CACTUS_INTERVAL_MIN;
   document.querySelectorAll("[data-cactus]").forEach((cactus) => {
@@ -59,6 +51,7 @@ function createCactus(): void {
   cactus.src = "/cactus.png";
   cactus.classList.add("cactus");
   setCustomProperty(cactus, "--left", 100);
+  const worldElem = document.querySelector("[data-world]") as HTMLElement;
   worldElem.append(cactus);
 }
 

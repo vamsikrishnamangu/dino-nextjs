@@ -2,9 +2,12 @@ export function getCustomProperty(
   elem: HTMLElement | null,
   prop: string
 ): number {
-  return (
-    parseFloat(getComputedStyle(elem as Element).getPropertyValue(prop)) || 0
-  );
+  if (!elem) {
+    console.log("Attempting to get a style of a non-existent element.");
+    return 0;
+  }
+
+  return parseFloat(getComputedStyle(elem).getPropertyValue(prop)) || 0;
 }
 
 export function setCustomProperty(

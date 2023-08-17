@@ -3,6 +3,8 @@ import { create } from "zustand";
 type GroundState = {
   left1: number;
   left2: number;
+  groundRef1: HTMLImageElement | null;
+  groundRef2: HTMLImageElement | null;
   worldElem: HTMLElement | null;
   setWorldElem: (worldElem: HTMLElement) => void;
   scoreElem: HTMLElement | null;
@@ -14,6 +16,8 @@ type GroundState = {
 export const useGroundStore = create<GroundState>((set) => ({
   left1: 0,
   left2: 300,
+  groundRef1: null,
+  groundRef2: null,
   worldElem: null,
   scoreElem: null,
   startScreenElem: null,
