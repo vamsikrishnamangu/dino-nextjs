@@ -2,70 +2,57 @@ import React, { useEffect, useRef, useState } from "react";
 import { updateGround, setupGround } from "@/Ground/Ground";
 import { setDinoLose } from "@/Dino/Dino";
 import { updateCactus, setupCactus, getCactusRects } from "@/Cactus/Cactus";
-import { useGroundStore } from "@/store/store";
 import {
   incrementCustomProperty,
   setCustomProperty,
   getCustomProperty,
 } from "@/store/updateCustomProperty";
-const WORLD_WIDTH = 100;
-const WORLD_HEIGHT = 30;
+import { useGroundStore } from "@/store/store";
 const SPEED_SCALE_INCREASE = 0.00001;
 const JUMP_SPEED = 0.45;
 const GRAVITY = 0.0015;
 const DINO_FRAME_COUNT = 2;
 const FRAME_TIME = 100;
 export const Game = () => {
-  const worldElem = useGroundStore((s) => s.worldElem);
-  const setWorldElem = useGroundStore((s) => s.setWorldElem);
-  const scoreElem = useGroundStore((s) => s.scoreElem);
-  const setScoreElem = useGroundStore((s) => s.setScoreElem);
-  const setStartScreenElem = useGroundStore((s) => s.setStartScreenElem);
-  const startScreenElem = useGroundStore((s) => s.startScreenElem);
+  const width = useGroundStore((s) => s.width);
+  const setWidth = useGroundStore((s) => s.setWidth);
   const lastTimeRef = useRef<number | null>(null);
   const speedScaleRef = useRef(1);
   const scoreRef = useRef<HTMLDivElement | null>(null);
-  const [score, setScore] = useState(0);
+  let score = useRef<number>(0);
   const dinoRef = useRef<HTMLImageElement | null>(null);
-  const startScreenRef = useRef<HTMLImageElement | null>(null);
+  const startScreenRef = useRef<HTMLDivElement | null>(null);
   const [isJumping, setIsJumping] = useState(false);
   const [dinoFrame, setDinoFrame] = useState(0);
-  const [yVelocity, setYVelocity] = useState(0);
-  const [currentFrameTime, setCurrentFrameTime] = useState(0);
+  let yVelocity = useRef<number>(0);
+  let currentFrameTime = useRef<number>(0);
   const groundRef1 = useRef<HTMLImageElement | null>(null);
   const groundRef2 = useRef<HTMLImageElement | null>(null);
+  let gameStarted = useRef<boolean | null>(false);
+
   useEffect(() => {
     const worldElem: any = document.querySelector("[data-world]");
-    setWorldElem(worldElem);
-    let scoreElem: any = document.querySelector("[data-score]");
-    setScoreElem(scoreElem);
     const startScreenElem: any = document.querySelector("[data-start-screen]");
-    setStartScreenElem(startScreenElem);
+    const groundElem: any = document.querySelector("[data-ground]");
     if (!worldElem || !startScreenElem) return;
 
-    // function handleResize() {
-    //   let worldToPixelScale;
-    //   if (window.innerWidth / window.innerHeight < WORLD_WIDTH / WORLD_HEIGHT) {
-    //     worldToPixelScale = window.innerWidth / WORLD_WIDTH;
-    //   } else {
-    //     worldToPixelScale = window.innerHeight / WORLD_HEIGHT;
-    //   }
-    //   if (worldElem) {
-    //     worldElem.style.width = `${WORLD_WIDTH * worldToPixelScale}px`;
-    //     worldElem.style.height = `${WORLD_HEIGHT * worldToPixelScale}px`;
-    //   }
-    // }
     function setPixelToWorldScale() {
-      let worldToPixelScale;
-      if (window.innerWidth / window.innerHeight < WORLD_WIDTH / WORLD_HEIGHT) {
-        worldToPixelScale = window.innerWidth / WORLD_WIDTH;
+      const { innerWidth, innerHeight } = window;
+      if (innerHeight > innerWidth) {
+        worldElem.style.transform = `translate(-50%, -50%) rotate(90deg)`;
+        worldElem.style.width = `${innerHeight}px`;
+        worldElem.style.height = `${innerWidth}px`;
+        groundElem.style.width = `${innerHeight}px`;
+        setWidth(innerHeight);
       } else {
-        worldToPixelScale = window.innerHeight / WORLD_HEIGHT;
+        worldElem.style.transform = ``;
+        worldElem.style.width = `${innerWidth}px`;
+        worldElem.style.height = `${innerHeight}px`;
+        groundElem.style.width = `${innerWidth}px`;
+        setWidth(innerWidth);
       }
-
-      worldElem.style.width = `${WORLD_WIDTH * worldToPixelScale}px`;
-      worldElem.style.height = `${WORLD_HEIGHT * worldToPixelScale}px`;
     }
+
     window.addEventListener("resize", setPixelToWorldScale);
     document.addEventListener("keydown", handleStart, { once: true });
     setPixelToWorldScale();
@@ -74,77 +61,69 @@ export const Game = () => {
       window.removeEventListener("resize", setPixelToWorldScale);
     };
   }, []);
+
   useEffect(() => {
-    function onJump(e: KeyboardEvent) {
-      if (e.code !== "Space" || isJumping) return;
-      setYVelocity(JUMP_SPEED);
-      setIsJumping(true);
-    }
-
-    document.addEventListener("keydown", onJump);
-    return () => {
-      document.removeEventListener("keydown", onJump);
+    const handleSpacebarJump = (event: KeyboardEvent) => {
+      if (event.code === "Space" && !isJumping) {
+        setIsJumping(true);
+        yVelocity.current = JUMP_SPEED;
+      }
     };
-  }, [isJumping]);
-  const setupDino = () => {
-    setIsJumping(false);
-    setDinoFrame(0);
-    setCurrentFrameTime(0);
-    setYVelocity(0);
 
-    if (dinoRef.current) {
-      setCustomProperty(dinoRef.current, "--bottom", 0);
+    if (gameStarted) {
+      document.addEventListener("keydown", handleSpacebarJump);
     }
-  };
+
+    return () => {
+      document.removeEventListener("keydown", handleSpacebarJump);
+    };
+  }, [gameStarted, isJumping]);
 
   const updateDino = (delta: number, speedScale: number) => {
     handleRun(delta, speedScale);
     handleJump(delta);
   };
   const handleRun = (delta: number, speedScale: number) => {
-    if (isJumping && dinoRef.current) {
-      dinoRef.current.src = `/dino-stationary.png`;
-      return;
-    }
-    if (currentFrameTime >= FRAME_TIME) {
+    console.log("ground1", groundRef1.current);
+    console.log("ground2", groundRef2.current);
+    if (currentFrameTime.current >= FRAME_TIME) {
       setDinoFrame((prevFrame) => {
         const newFrame = (prevFrame + 1) % DINO_FRAME_COUNT;
-        if (dinoRef.current) {
-          dinoRef.current.src = `/dino-run-${newFrame}.png`;
-        }
         return newFrame;
       });
-
-      setCurrentFrameTime((prevTime) => prevTime - FRAME_TIME);
+      currentFrameTime.current -= FRAME_TIME;
     } else {
-      setCurrentFrameTime((prevTime) => prevTime + delta * speedScale);
+      currentFrameTime.current += delta * speedScale;
     }
   };
 
   const handleJump = (delta: number) => {
-    if (!isJumping || !dinoRef.current) return;
-    incrementCustomProperty(dinoRef.current, "--bottom", yVelocity * delta);
+    if (isJumping || !dinoRef.current) return;
+    incrementCustomProperty(
+      dinoRef.current,
+      "--bottom",
+      yVelocity.current * delta
+    );
 
     if (getCustomProperty(dinoRef.current, "--bottom") <= 0) {
       setCustomProperty(dinoRef.current, "--bottom", 0);
       setIsJumping(false);
     }
-
-    setYVelocity((prev) => prev - GRAVITY * delta);
+    yVelocity.current -= GRAVITY * delta;
   };
-
   function handleStart() {
+    gameStarted.current = true;
     lastTimeRef.current = null;
     speedScaleRef.current = 1;
-    if (scoreElem !== null) {
-      setScore(0);
+    score.current = 0;
+    if (startScreenRef.current) {
+      startScreenRef.current.textContent = "";
     }
-    setupDino();
-    setupGround(groundRef1.current, groundRef2.current);
+    setupGround(groundRef1.current, groundRef2.current, width);
     setupCactus();
-    startScreenRef.current?.classList.add("hide");
     window.requestAnimationFrame(update);
   }
+
   function update(time: number) {
     if (lastTimeRef.current == null) {
       lastTimeRef.current = time;
@@ -156,12 +135,13 @@ export const Game = () => {
       delta,
       speedScaleRef.current,
       groundRef1.current,
-      groundRef2.current
+      groundRef2.current,
+      width
     );
     updateDino(delta, speedScaleRef.current);
     updateCactus(delta, speedScaleRef.current);
     updateSpeedScale(delta);
-    setScore((prev) => prev + delta * 0.01);
+    score.current += delta * 0.01;
     if (checkLose()) {
       handleLose();
     } else {
@@ -174,10 +154,13 @@ export const Game = () => {
   }
   function handleLose() {
     setDinoLose(dinoRef);
+    if (startScreenRef.current) {
+      startScreenRef.current.textContent =
+        "Game Over! Press any key to Start Again";
+    }
     setTimeout(() => {
       document.addEventListener("keydown", handleStart, { once: true });
-      if (!startScreenElem) return;
-      startScreenElem.classList.remove("hide");
+      gameStarted.current = false;
     }, 100);
   }
 
@@ -202,13 +185,13 @@ export const Game = () => {
     bottom: `${getCustomProperty(dinoRef.current, "--bottom")}%`,
   };
   return (
-    <div className="world relative h-screen w-screen" data-world>
+    <div className="world" data-world>
       <div
         ref={scoreRef}
         className="score absolute top-0 right-0 text-lg"
         data-score
       >
-        {Math.floor(score)}
+        {Math.floor(score.current)}
       </div>
       <div
         ref={startScreenRef}
@@ -236,7 +219,9 @@ export const Game = () => {
           className="dino absolute bottom-0 left-0"
           style={dinoStyle}
           ref={dinoRef}
-          src={`/dino-stationary.png`}
+          src={
+            isJumping ? `/dino-stationary.png` : `/dino-run-${dinoFrame}.png`
+          }
           alt="dino"
           data-dino
         />

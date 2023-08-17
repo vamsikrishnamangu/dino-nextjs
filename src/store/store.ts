@@ -3,6 +3,8 @@ import { create } from "zustand";
 type GroundState = {
   left1: number;
   left2: number;
+  width: number;
+  setWidth: (width: number) => void;
   groundRef1: HTMLImageElement | null;
   groundRef2: HTMLImageElement | null;
   worldElem: HTMLElement | null;
@@ -16,6 +18,8 @@ type GroundState = {
 export const useGroundStore = create<GroundState>((set) => ({
   left1: 0,
   left2: 300,
+  width: 300,
+  setWidth: (width: number) => set({ width }),
   groundRef1: null,
   groundRef2: null,
   worldElem: null,

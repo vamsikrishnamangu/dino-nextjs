@@ -8,18 +8,11 @@
   box-sizing: border-box;
   user-select: none;
 }
-
-body {
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
 .world {
   overflow: hidden;
   position: relative;
+  min-height: 100vh;
+  transform-origin: center;
 }
 
 .score {
@@ -44,7 +37,6 @@ body {
 .ground {
   --left: 0;
   position: absolute;
-  width: 300%;
   bottom: 0;
   left: calc(var(--left) * 1%);
 }
@@ -53,13 +45,13 @@ body {
   --bottom: 0;
   position: absolute;
   left: 1%;
-  height: 30%;
+  height: 20%;
   bottom: calc(var(--bottom) * 1%);
 }
 
 .cactus {
   position: absolute;
   left: calc(var(--left) * 1%);
-  height: 30%;
+  height: 18%;
   bottom: 0;
 }
